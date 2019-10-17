@@ -18,7 +18,7 @@ def update() :
 	global nextTime
 
 	if state is 0 :
-		balanceUI.setPlaythingID(20)
+		balanceUI.setOutfitID(20)
 		balanceUI.setStateText("밸런스 운동", "level 1-1(응용)", "동작 12")
 		# balanceUI.setHelpMessage("준비하세요.")
 		# balanceUI.removeUpdateEventListener(update)

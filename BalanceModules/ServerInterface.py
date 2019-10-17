@@ -1,6 +1,6 @@
 import requests, json
 
-URL = "http://192.168.0.12:8000/plaything/"
+URL = "http://192.168.0.12:8000/outfit/"
 
 def getRequestTest() :
 	response = requests.get(URL + "fetchCommand")

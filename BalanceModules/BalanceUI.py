@@ -83,8 +83,8 @@ class BalanceUI :
 	#                                    UI API                                    #
 	################################################################################
 	# These methods should Only be called on Update listeners.
-	def setPlaythingID(self, id) :
-		self.app.setPlaythingNameText("교구 " + str(id) + "번")
+	def setOutfitID(self, id) :
+		self.app.setOutfitNameText("교구 " + str(id) + "번")
 
 	def setStateText(self, exercise, level, motion) :
 		self.app.setExerciseText(exercise)
@@ -205,9 +205,9 @@ class BalanceBoardDisplay(Frame) :
 		self.mainFrame.configure(background='white')
 
 		# setup title widgets
-		playthingNameLabelFont = font.Font(size=80)
-		self.playthingNameLabel = Label(self.titleFrame, text="", font=playthingNameLabelFont)
-		self.playthingNameLabel.configure(background='white')
+		outfitNameLabelFont = font.Font(size=80)
+		self.outfitNameLabel = Label(self.titleFrame, text="", font=outfitNameLabelFont)
+		self.outfitNameLabel.configure(background='white')
 
 		stateLabelFont = font.Font(size=40)
 		self.exerciseLabel = Entry(self.titleFrame, width=12, font=stateLabelFont)
@@ -238,7 +238,7 @@ class BalanceBoardDisplay(Frame) :
 		self.mainFrame.pack(side=TOP, expand=True, fill=BOTH)
 
 		# setup title widget layout
-		self.playthingNameLabel.pack(side=LEFT, pady=25, padx=150)
+		self.outfitNameLabel.pack(side=LEFT, pady=25, padx=150)
 		self.exerciseLabel.pack(side=LEFT, padx=20)
 		self.levelLabel.pack(side=LEFT, padx=20)
 		self.motionLabel.pack(side=LEFT, padx=20)
@@ -265,8 +265,8 @@ class BalanceBoardDisplay(Frame) :
 	################################################################################
 	#                              UI control methods                              #
 	################################################################################
-	def setPlaythingNameText(self, text) :
-		self.playthingNameLabel["text"] = text
+	def setOutfitNameText(self, text) :
+		self.outfitNameLabel["text"] = text
 
 	def setExerciseText(self, text) :
 		self.exerciseLabel.insert(0, text)
