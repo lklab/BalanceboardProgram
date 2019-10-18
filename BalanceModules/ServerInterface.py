@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import requests, json
 
 URL = "http://192.168.0.12:8000/outfit/"
