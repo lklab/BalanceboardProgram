@@ -12,14 +12,12 @@ def requestId(outfit) :
 	try :
 		parameter = {}
 		parameter["uuid"] = getUUID()
-		parameter["signalPeriod"] = str(outfit.status["signalPeriod"])
-		parameter["changeTime"] = str(outfit.status["changeTime"])
 
 		response = requests.get(URL + "requestId", params=parameter)
 
 		if response.status_code is 200 :
 			responseData = json.loads(response.text)
-			outfit.status["id"] = int(responseData["id"])
+			outfit.status["id"] = responseData["id"]
 			return True
 
 		else :
@@ -39,7 +37,7 @@ def updateStatus(outfit) :
 
 		if response.status_code is 200 :
 			responseData = json.loads(response.text)
-			if responseData["newCommand"] is "0" :
+			if responseData["newCommand"] is 0 :
 				outfit.newCommand = False
 			else :
 				outfit.newCommand = True
@@ -59,7 +57,7 @@ def updateStatus(outfit) :
 def fetchCommand(outfit) :
 	try :
 		parameter = {}
-		parameter["id"] = str(outfit.status["id"])
+		parameter["id"] = outfit.status["id"]
 
 		response = requests.get(URL + "fetchCommand", params=parameter)
 
@@ -82,7 +80,7 @@ def fetchCommand(outfit) :
 def submitResult(outfit, resultCsv) :
 	try :
 		resultData = {}
-		resultData["id"] = str(outfit.status["id"])
+		resultData["id"] = outfit.status["id"]
 		resultData["exercise"] = outfit.status["exercise"]
 		resultData["level"] = outfit.status["level"]
 		resultData["result"] = resultCsv
