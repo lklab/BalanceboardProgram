@@ -84,7 +84,10 @@ class BalanceUI :
 	################################################################################
 	# These methods should Only be called on Update listeners.
 	def setOutfitID(self, id) :
-		self.app.setOutfitNameText("교구 " + str(id) + "번")
+		if id is -1 :
+			self.app.setOutfitNameText("연결 중..")
+		else :
+			self.app.setOutfitNameText("교구 " + str(id) + "번")
 
 	def setStateText(self, exercise, level, motion) :
 		self.app.setExerciseText(exercise)
@@ -206,7 +209,7 @@ class BalanceBoardDisplay(Frame) :
 
 		# setup title widgets
 		outfitNameLabelFont = font.Font(size=80)
-		self.outfitNameLabel = Label(self.titleFrame, text="", font=outfitNameLabelFont)
+		self.outfitNameLabel = Label(self.titleFrame, text="        ", font=outfitNameLabelFont)
 		self.outfitNameLabel.configure(background='white')
 
 		stateLabelFont = font.Font(size=40)
@@ -269,12 +272,15 @@ class BalanceBoardDisplay(Frame) :
 		self.outfitNameLabel["text"] = text
 
 	def setExerciseText(self, text) :
+		self.exerciseLabel.delete(0, END)
 		self.exerciseLabel.insert(0, text)
 
 	def setLevelText(self, text) :
+		self.levelLabel.delete(0, END)
 		self.levelLabel.insert(0, text)
 
 	def setMotionText(self, text) :
+		self.motionLabel.delete(0, END)
 		self.motionLabel.insert(0, text)
 
 	def setHelpText(self, text) :
