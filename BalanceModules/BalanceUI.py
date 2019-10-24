@@ -101,6 +101,9 @@ class BalanceUI :
 		self.app.setLevelText(level)
 		self.app.setMotionText(motion)
 
+	def setMotionText(self, motion) :
+		self.app.setMotionText(motion)
+
 	def showCanvasOrHelpText(self, isCanvas) :
 		self.app.showCanvasOrHelpText(isCanvas)
 
@@ -110,6 +113,9 @@ class BalanceUI :
 
 	def setCountdown(self, count) :
 		self.clearHelpTextCoroutine()
+
+		if count <= 0 :
+			return
 
 		self.countdownStartTime = time.time()
 		self.countdownCount = count

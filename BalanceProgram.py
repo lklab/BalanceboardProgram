@@ -132,7 +132,7 @@ def serverResponseHandler() : # running in UI thread
 				elif data["type"] is Globals.COMMAND_START :
 					outfit.status["exercise"]     = data["exercise"]
 					outfit.status["level"]        = data["level"]
-					outfit.status["motion"]       = 0
+					outfit.status["motion"]       = 1
 					outfit.status["signalPeriod"] = data["signalPeriod"]
 					outfit.status["changeTime"]   = data["changeTime"]
 
