@@ -12,6 +12,11 @@ from BalanceModules.Outfit import Outfit
 import BalanceModules.ServerInterface as ServerInterface
 import BalanceModules.Globals as Globals
 
+from Exercises.ExerciseBI          import ExerciseBI
+from Exercises.ExerciseDirectional import ExerciseDirectional
+from Exercises.ExerciseBalance     import ExerciseBalance
+from Exercises.ExerciseRotation    import ExerciseRotation
+
 ################################################################################
 #                                   constants                                  #
 ################################################################################
@@ -71,7 +76,7 @@ def update() :
 ################################################################################
 #                             server communication                             #
 ################################################################################
-def serverCommunicationTask() :
+def serverCommunicationTask() : # running in communication thread
 	global outfit
 	global serverState, SERVER_STATE_DISCONNECTED, SERVER_STATE_CONNTECTED
 	global commandQueue, COMMAND_CODE_CONNECTION, COMMAND_CODE_COMMAND
@@ -101,11 +106,13 @@ def serverCommunicationTask() :
 	if taskEnabledFlag :
 		threading.Timer(1, serverCommunicationTask).start()
 
-def serverResponseHandler() :
+def serverResponseHandler() : # running in UI thread
 	global balanceUI, outfit
 	global EXERCISE_TO_STRING
 
 	global commandQueue, COMMAND_CODE_CONNECTION, COMMAND_CODE_COMMAND
+	global currentExercise, exerciseDictionary
+
 	global taskLock
 
 	with taskLock :
@@ -133,6 +140,11 @@ def serverResponseHandler() :
 						EXERCISE_TO_STRING[outfit.status["exercise"]],
 						"레벨 " + str(outfit.status["level"]),
 						"동작 " + str(outfit.status["motion"]))
+
+					if currentExercise is not None :
+						currentExercise.stop()
+					currentExercise = exerciseDictionary[outfit.status["exercise"]]
+					currentExercise.start()
 					
 				elif data["type"] is Globals.COMMAND_STOP :
 					outfit.status["exercise"]     = Globals.EXERCISE_NONE
@@ -140,31 +152,46 @@ def serverResponseHandler() :
 					outfit.status["motion"]       = 0
 					balanceUI.setStateText("대기 중", "", "")
 
+					currentExercise.stop()
+					currentExercise = None
+
 		except queue.Empty :
 			pass # there is no command
 
 ################################################################################
 #                             initialization script                            #
 ################################################################################
-print("initialize outfit variables...")
+print("initialize outfit variables.")
 outfit = Outfit()
 
-print("initialize server communication variables...")
+print("initialize server communication variables.")
 serverState = SERVER_STATE_DISCONNECTED
 commandQueue = queue.Queue()
 
-print("starting server communication task...")
+print("starting server communication task.")
 taskLock = threading.Lock()
 taskEnabledFlag = True
 threading.Timer(5, serverCommunicationTask).start()
 
-print("starting UI...")
+print("setup UI.")
 balanceUI = BalanceUI()
-balanceUI.showFrameRate(True)
+balanceUI.showFrameRate(False)
 balanceUI.setOutfitID(-1)
 balanceUI.setStateText("대기 중", "", "")
 balanceUI.appendUpdateEventListener(serverResponseHandler)
+
+print("setup exercises.")
+currentExercise = None
+exerciseDictionary = {
+	Globals.EXERCISE_NONE        : None,
+	Globals.EXERCISE_BI          : ExerciseBI(outfit, balanceUI),
+	Globals.EXERCISE_DIRECTIONAL : ExerciseDirectional(outfit, balanceUI),
+	Globals.EXERCISE_BALANCE     : ExerciseBalance(outfit, balanceUI),
+	Globals.EXERCISE_ROTATION    : ExerciseRotation(outfit, balanceUI),
+}
+
+print("starting UI.")
 balanceUI.mainloop()
 
-print("terminating server communication task...")
+print("terminating server communication task.")
 taskEnabledFlag = False

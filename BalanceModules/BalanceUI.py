@@ -22,6 +22,13 @@ class BalanceUI :
 	countdownStartTime = 0.0
 	isCountdown = False
 
+	# message sequence variables
+	messageSequence = None
+	messageSequencePeriod = 0.0
+	nextMessageTime = 0.0
+	isMessageSequence = False
+	currentMessageIndex = 0
+
 	# test variables
 
 	def __init__(self) :
@@ -98,19 +105,33 @@ class BalanceUI :
 		self.app.showCanvasOrHelpText(isCanvas)
 
 	def setHelpMessage(self, message) :
-		if self.isCountdown :
-			self.isCountdown = False
-			self.removeUpdateEventListener(self.countdownCoroutine)
-
+		self.clearHelpTextCoroutine()
 		self.app.setHelpText(message)
 
 	def setCountdown(self, count) :
+		self.clearHelpTextCoroutine()
+
 		self.countdownStartTime = time.time()
 		self.countdownCount = count
 		self.isCountdown = True
 
 		self.app.setHelpText("카운트다운 " + str(self.countdownCount))
 		self.appendUpdateEventListener(self.countdownCoroutine)
+
+	def setMessageSequence(self, messageSequence, messageSequencePeriod) :
+		self.clearHelpTextCoroutine()
+
+		self.messageSequence = messageSequence
+		if len(self.messageSequence) <= 0 :
+			return
+
+		self.messageSequencePeriod = messageSequencePeriod
+		self.nextMessageTime = time.time() + self.messageSequencePeriod
+		self.isMessageSequence = True
+		self.currentMessageIndex = 0
+
+		self.app.setHelpText(messageSequence[0])
+		self.appendUpdateEventListener(self.messageSequenceCoroutine)
 
 	def showStimulation(self, color) :
 		self.app.drawCircleCenter(color, 500)
@@ -126,6 +147,10 @@ class BalanceUI :
 		self.app.showCanvasOrHelpText(False)
 		self.setCountdown(count)
 
+	def setMessageSequenceWithCanvas(self, messageSequence, messageSequencePeriod) :
+		self.app.showCanvasOrHelpText(False)
+		self.setMessageSequence(messageSequence, messageSequencePeriod)
+
 	def showStimulationWithCanvas(self, color) :
 		self.app.showCanvasOrHelpText(True)
 		self.showStimulation(color)
@@ -136,6 +161,10 @@ class BalanceUI :
 
 	def clearCanvas(self) :
 		self.app.clearCanvas()
+
+	def clearHelpText(self) :
+		self.clearHelpTextCoroutine()
+		self.app.setHelpText("")
 
 	################################################################################
 	#                                frame rate API                                #
@@ -160,6 +189,15 @@ class BalanceUI :
 	################################################################################
 	#                               private methods                                #
 	################################################################################
+	def clearHelpTextCoroutine(self) :
+		if self.isCountdown :
+			self.isCountdown = False
+			self.removeUpdateEventListener(self.countdownCoroutine)
+
+		if self.isMessageSequence :
+			self.isMessageSequence = False
+			self.removeUpdateEventListener(self.messageSequenceCoroutine)
+
 	def countdownCoroutine(self) :
 		if self.isCountdown :
 			if time.time() - self.countdownStartTime >= 1.0 :
@@ -174,6 +212,21 @@ class BalanceUI :
 					self.app.setHelpText("카운트다운 " + str(self.countdownCount))
 		else :
 			self.removeUpdateEventListener(self.countdownCoroutine)
+
+	def messageSequenceCoroutine(self) :
+		if self.isMessageSequence :
+			if time.time() >= self.nextMessageTime :
+				self.currentMessageIndex = self.currentMessageIndex + 1
+
+				if len(self.messageSequence) > self.currentMessageIndex :
+					self.app.setHelpText(self.messageSequence[self.currentMessageIndex])
+					self.nextMessageTime = time.time() + self.messageSequencePeriod
+				else :
+					self.isMessageSequence = False
+					self.removeUpdateEventListener(self.messageSequenceCoroutine)
+					self.app.setHelpText("")
+		else :
+			self.removeUpdateEventListener(self.messageSequenceCoroutine)
 
 
 
