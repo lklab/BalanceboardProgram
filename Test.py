@@ -1,10 +1,26 @@
 #!/usr/bin/env python3
 
-from BalanceModules.Outfit import *
-from BalanceModules.ServerInterface import *
+# from BalanceModules.Outfit import *
+# from BalanceModules.ServerInterface import *
 
-outfit = Outfit()
-requestId(outfit)
-updateStatus(outfit)
-fetchCommand(outfit)
-print("command: " + str(outfit.command))
+# outfit = Outfit()
+# requestId(outfit)
+# updateStatus(outfit)
+# fetchCommand(outfit)
+# print("command: " + str(outfit.command))
+
+from BalanceModules.BalanceInputs import *
+import time
+
+openKeyboardEvent()
+
+print("start to sleeping...")
+time.sleep(5)
+print("wake up!! let's get work!")
+
+try :
+	while True :
+		key = getKeyboardEvent()
+		print("key pushed: " + str(key))
+except KeyboardInterrupt :
+	closeKeyboardEvent()

@@ -50,14 +50,14 @@ class ExerciseBI() :
 	# instructions
 	exerciseStartInstructionSequence = [
 		"BI 운동을 시작합니다.",
-		"각 동작에 따라 시각/청각 자극이\n주기적으로 주어집니다.",
-		"주어진 자극에 맞게\n양 손 또는 양 발을\n사용하여 입력하세요."
+		"각 동작에 따라 시각/청각 신호가\n주기적으로 주어집니다.",
+		"주어진 신호에 맞게\n양 손 또는 양 발을\n사용하여 입력하세요."
 	]
 
 	stimulationInstructionDictionary = {
-		STIMULATION_MODE_BOTH    : "자극은 시/청각이\n동시에 주어집니다.",
-		STIMULATION_MODE_HEARING : "자극은 청각으로 주어집니다.",
-		STIMULATION_MODE_VISION  : "자극은 시각으로 주어집니다.",
+		STIMULATION_MODE_BOTH    : "신호는 시/청각이\n동시에 주어집니다.",
+		STIMULATION_MODE_HEARING : "신호는 청각으로 주어집니다.",
+		STIMULATION_MODE_VISION  : "신호는 시각으로 주어집니다.",
 	}
 
 	inputInstructionDictionary = {
