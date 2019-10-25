@@ -1,6 +1,12 @@
 import time
 import json
 
+from BalanceModules.BalanceInputs import *
+
+PHOTO_IMAGE_TYPE_PERFECT = "perfect"
+PHOTO_IMAGE_TYPE_FAST    = "fast"
+PHOTO_IMAGE_TYPE_LATE    = "late"
+
 class ExerciseBI() :
 	# constants
 	STATE_NONE               = 0
@@ -19,8 +25,9 @@ class ExerciseBI() :
 	INPUT_TYPE_LEFT_FOOT = "lf"
 	INPUT_TYPE_RIGHT_FOOT = "rf"
 
-	MOTION_STATE_HIDING  = 0
-	MOTION_STATE_SHOWING = 1
+	MOTION_STATE_FRONT_HIDING = 0
+	MOTION_STATE_SHOWING      = 1
+	MOTION_STATE_REAR_HIDING  = 2
 
 	MOTION_DURATION_SECOND = 30
 
@@ -30,13 +37,18 @@ class ExerciseBI() :
 	nextStateTime = 0.0
 
 	# motion status
-	motionState = MOTION_STATE_HIDING
+	motionState = MOTION_STATE_FRONT_HIDING
 	nextMotionStateTime = 0.0
 	stimulationTotalCount = 0
 	currentStimulationCount = 0
 	signalPeriodSecond = 0.0
 	signalDurationSecond = 0.0
-	hidingDurationSecond = 0.0
+	hidingDurationSecondHalf = 0.0
+
+	# judgment
+	signalBaseTime = 0.0
+	perfectDeviationMax = 0.0
+	judgmentSet = False
 
 	# parameters
 	level = 0
@@ -118,6 +130,7 @@ class ExerciseBI() :
 		self.balanceUI.removeUpdateEventListener(self.update)
 		self.balanceUI.clearHelpText()
 		self.balanceUI.clearCanvas()
+		closeKeyboardEvent()
 		print("Exercise BI is stopped")
 
 	def update(self) :
@@ -143,21 +156,49 @@ class ExerciseBI() :
 				self.balanceUI.showCanvasOrHelpText(True)
 
 				# initialize motion variables
+				# timing variables
 				self.signalPeriodSecond = self.signalPeriod / 1000.0
 				self.signalDurationSecond = self.signalPeriodSecond * \
 						self.motionSetting[str(self.level)]["perfectDuration"] / 1000.0
-				self.hidingDurationSecond = self.signalPeriodSecond - self.signalDurationSecond
+				self.hidingDurationSecondHalf = (self.signalPeriodSecond - self.signalDurationSecond) / 2.0
 
+				# stimulation count variables
 				self.stimulationTotalCount = int(self.MOTION_DURATION_SECOND / self.signalPeriodSecond)
 				self.currentStimulationCount = 0
-				self.motionState = self.MOTION_STATE_HIDING
-				self.nextMotionStateTime = time.time() + self.hidingDurationSecond
 
+				# motion state variables
+				self.motionState = self.MOTION_STATE_FRONT_HIDING
+				self.nextMotionStateTime = time.time() + self.hidingDurationSecondHalf
+
+				# judgment variables
+				self.perfectDeviationMax = self.signalDurationSecond / 2.0
+				self.signalBaseTime = self.nextMotionStateTime + self.perfectDeviationMax
+				self.judgmentSet = False
+
+				# normal state variables
 				self.state = self.STATE_MOTION
 
+				# open keyboard event
+				openKeyboardEvent()
+				flushKeyboardEvent()
+
 		elif self.state == self.STATE_MOTION :
+			# judgment
+			if not self.judgmentSet :
+				key = getKeyboardEvent()
+				if key != -1 :
+					deviation = time.time() - self.signalBaseTime
+					if abs(deviation) < self.perfectDeviationMax :
+						self.balanceUI.showResponseResult(PHOTO_IMAGE_TYPE_PERFECT)
+					elif deviation < 0 :
+						self.balanceUI.showResponseResult(PHOTO_IMAGE_TYPE_FAST)
+					else :
+						self.balanceUI.showResponseResult(PHOTO_IMAGE_TYPE_LATE)
+					self.judgmentSet = True
+
+			# state check
 			if time.time() >= self.nextMotionStateTime :
-				if self.motionState == self.MOTION_STATE_HIDING :
+				if self.motionState == self.MOTION_STATE_FRONT_HIDING :
 					self.showStimulation(self.motion, self.currentStimulationCount)
 					self.motionState = self.MOTION_STATE_SHOWING
 					self.nextMotionStateTime = self.nextMotionStateTime + self.signalDurationSecond
@@ -165,23 +206,36 @@ class ExerciseBI() :
 				elif self.motionState == self.MOTION_STATE_SHOWING :
 					self.hideStumulation()
 					self.currentStimulationCount = self.currentStimulationCount + 1
+					self.motionState = self.MOTION_STATE_REAR_HIDING
+					self.nextMotionStateTime = self.nextMotionStateTime + self.hidingDurationSecondHalf
 
+				elif self.motionState == self.MOTION_STATE_REAR_HIDING :
+					self.balanceUI.clearCanvas()
+
+					# motion end check
 					if self.currentStimulationCount < self.stimulationTotalCount :
-						self.motionState = self.MOTION_STATE_HIDING
-						self.nextMotionStateTime = self.nextMotionStateTime + self.hidingDurationSecond
+						# prepare next stimulus
+						self.motionState = self.MOTION_STATE_FRONT_HIDING
+						self.nextMotionStateTime = self.nextMotionStateTime + self.hidingDurationSecondHalf
+						self.signalBaseTime = self.signalBaseTime + self.signalPeriodSecond
+						self.judgmentSet = False
+						flushKeyboardEvent()
 					else :
+						# level end check
 						if self.motion < len(self.motionSetting[str(self.level)]["stimulations"]) :
+							# prepare next motion
 							self.motion = self.motion + 1
 							self.startMotionInstruction(self.motion)
 
 							self.outfit.status["motion"] = self.motion
 							self.balanceUI.setMotionText("동작 " + str(self.outfit.status["motion"]))
 						else :
+							# end of level
 							self.state = self.STATE_END
 							self.outfit.status["motion"] = 0
-							self.balanceUI.clearCanvas()
 							self.balanceUI.setMotionText("완료")
 							self.balanceUI.setHelpMessageWithCanvas("모든 동작을 마쳤습니다.")
+							closeKeyboardEvent()
 
 		elif self.state == self.STATE_END :
 			return
@@ -192,6 +246,9 @@ class ExerciseBI() :
 
 		self.state = self.STATE_MOTION_INSTRUCTION
 		self.nextStateTime = time.time() + len(instruction) * 5.0
+
+		# close keyboard event
+		closeKeyboardEvent()
 
 	def getMotionInstruction(self, motion) :
 		instruction = []
@@ -210,11 +267,12 @@ class ExerciseBI() :
 
 	def showStimulation(self, motion, index) :
 		stimulation = self.motionSetting[str(self.level)]["stimulations"][motion-1]
-		inputType = self.motionSetting[str(self.level)]["inputs"][motion-1][index % 2]
+		inputs = self.motionSetting[str(self.level)]["inputs"][motion-1]
+		inputType = inputs[index % len(inputs)]
 
 		# TODO check hearing stimulation
 
 		self.balanceUI.showStimulation(self.visionStumulationDictionary[inputType])
 
 	def hideStumulation(self) :
-		self.balanceUI.clearCanvas()
+		self.balanceUI.showStimulation("white")
