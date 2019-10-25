@@ -4,9 +4,17 @@ keyboardEvent = None
 
 def openKeyboardEvent() :
 	global keyboardEvent
-	
+
+	if keyboardEvent :
+		closeKeyboardEvent()
 	keyboardEvent = CDLL("./BalanceModules/BalanceInputsLibrary/keyboard_input.so")
 	keyboardEvent.open_keyboard_event()
+
+def flushKeyboardEvent() :
+	global keyboardEvent
+
+	if keyboardEvent :
+		keyboardEvent.flush_keyboard_event()
 
 def getKeyboardEvent() :
 	global keyboardEvent
@@ -21,4 +29,4 @@ def closeKeyboardEvent() :
 
 	if keyboardEvent :
 		keyboardEvent.close_keyboard_event()
-		close_keyboard_event = None
+		keyboardEvent = None
