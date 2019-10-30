@@ -5,9 +5,9 @@ import tkinter.font as font
 
 import time
 
-PHOTO_IMAGE_TYPE_PERFECT = "perfect"
-PHOTO_IMAGE_TYPE_FAST    = "fast"
-PHOTO_IMAGE_TYPE_LATE    = "late"
+RESULT_TYPE_PERFECT = 0
+RESULT_TYPE_FAST    = 1
+RESULT_TYPE_LATE    = 2
 
 class BalanceUI :
 	# frame rate variables
@@ -28,6 +28,7 @@ class BalanceUI :
 	nextMessageTime = 0.0
 	isMessageSequence = False
 	currentMessageIndex = 0
+	currentHelpTextObject = None
 
 	# test variables
 
@@ -104,15 +105,31 @@ class BalanceUI :
 	def setMotionText(self, motion) :
 		self.app.setMotionText(motion)
 
-	def showCanvasOrHelpText(self, isCanvas) :
-		self.app.showCanvasOrHelpText(isCanvas)
+	def deleteObject(self, obj) :
+		self.app.deleteObject(obj)
 
-	def setHelpMessage(self, message) :
+	def clearCanvas(self) :
+		self.app.clearCanvas()
+
+	def setHelpText(self, text) :
 		self.clearHelpTextCoroutine()
-		self.app.setHelpText(message)
+		self.setHelpTextInternal(text)
+
+	def clearHelpText(self) :
+		if self.currentHelpTextObject :
+			self.app.deleteObject(self.currentHelpTextObject)
+			self.currentHelpTextObject = None
+
+	# def showCanvasOrHelpText(self, isCanvas) :
+	# 	self.app.showCanvasOrHelpText(isCanvas)
+
+	# def setHelpMessage(self, message) :
+	# 	self.clearHelpTextCoroutine()
+	# 	self.app.setHelpText(message)
 
 	def setCountdown(self, count) :
 		self.clearHelpTextCoroutine()
+		self.clearHelpText()
 
 		if count <= 0 :
 			return
@@ -121,11 +138,12 @@ class BalanceUI :
 		self.countdownCount = count
 		self.isCountdown = True
 
-		self.app.setHelpText("카운트다운 " + str(self.countdownCount))
+		self.setHelpTextInternal("카운트다운 " + str(self.countdownCount))
 		self.appendUpdateEventListener(self.countdownCoroutine)
 
 	def setMessageSequence(self, messageSequence, messageSequencePeriod) :
 		self.clearHelpTextCoroutine()
+		self.clearHelpText()
 
 		self.messageSequence = messageSequence
 		if len(self.messageSequence) <= 0 :
@@ -136,41 +154,33 @@ class BalanceUI :
 		self.isMessageSequence = True
 		self.currentMessageIndex = 0
 
-		self.app.setHelpText(messageSequence[0])
+		self.setHelpTextInternal(messageSequence[0])
 		self.appendUpdateEventListener(self.messageSequenceCoroutine)
 
 	def showStimulation(self, color) :
-		self.app.drawCircleCenter(color, 500)
+		return self.app.drawCircleCenter(color, 500)
 
 	def showResponseResult(self, resultType) :
-		self.app.showPhotoImage(resultType)
+		(x, y) = self.app.getCanvasSize()
 
-	def setHelpMessageWithCanvas(self, message) :
-		self.app.showCanvasOrHelpText(False)
-		self.setHelpMessage(message)
+		if resultType is RESULT_TYPE_PERFECT :
+			resultText = "정확"
+			resultColor = "#00B050"
+		elif resultType is RESULT_TYPE_FAST :
+			resultText = "빠름"
+			resultColor = "#0000FF"
+		elif resultType is RESULT_TYPE_LATE :
+			resultText = "느림"
+			resultColor = "#FF0000"
+		else :
+			return None
 
-	def setCountdownWithCanvas(self, count) :
-		self.app.showCanvasOrHelpText(False)
-		self.setCountdown(count)
-
-	def setMessageSequenceWithCanvas(self, messageSequence, messageSequencePeriod) :
-		self.app.showCanvasOrHelpText(False)
-		self.setMessageSequence(messageSequence, messageSequencePeriod)
-
-	def showStimulationWithCanvas(self, color) :
-		self.app.showCanvasOrHelpText(True)
-		self.showStimulation(color)
-
-	def showResponseResultWithCanvas(self, resultType) :
-		self.app.showCanvasOrHelpText(True)
-		self.showResponseResult(resultType)
-
-	def clearCanvas(self) :
-		self.app.clearCanvas()
-
-	def clearHelpText(self) :
-		self.clearHelpTextCoroutine()
-		self.app.setHelpText("")
+		return self.app.drawText(
+			resultText,
+			x * 0.75, y * 0.5,
+			resultColor,
+			100,
+			CENTER)
 
 	################################################################################
 	#                                frame rate API                                #
@@ -195,6 +205,17 @@ class BalanceUI :
 	################################################################################
 	#                               private methods                                #
 	################################################################################
+	def setHelpTextInternal(self, text) :
+		self.clearHelpText()
+		(x, y) = self.app.getCanvasSize()
+		
+		self.currentHelpTextObject = self.app.drawText(
+			text,
+			x / 2, y / 2,
+			"black",
+			100,
+			CENTER)
+
 	def clearHelpTextCoroutine(self) :
 		if self.isCountdown :
 			self.isCountdown = False
@@ -212,10 +233,10 @@ class BalanceUI :
 				if self.countdownCount <= 0 :
 					self.isCountdown = False
 					self.removeUpdateEventListener(self.countdownCoroutine)
-					self.app.setHelpText("")
+					self.clearHelpText()
 				else :
 					self.countdownStartTime = self.countdownStartTime + 1.0
-					self.app.setHelpText("카운트다운 " + str(self.countdownCount))
+					self.setHelpTextInternal("카운트다운 " + str(self.countdownCount))
 		else :
 			self.removeUpdateEventListener(self.countdownCoroutine)
 
@@ -225,12 +246,12 @@ class BalanceUI :
 				self.currentMessageIndex = self.currentMessageIndex + 1
 
 				if len(self.messageSequence) > self.currentMessageIndex :
-					self.app.setHelpText(self.messageSequence[self.currentMessageIndex])
+					self.setHelpTextInternal(self.messageSequence[self.currentMessageIndex])
 					self.nextMessageTime = time.time() + self.messageSequencePeriod
 				else :
 					self.isMessageSequence = False
 					self.removeUpdateEventListener(self.messageSequenceCoroutine)
-					self.app.setHelpText("")
+					self.clearHelpText()
 		else :
 			self.removeUpdateEventListener(self.messageSequenceCoroutine)
 
@@ -238,7 +259,7 @@ class BalanceUI :
 
 class BalanceBoardDisplay(Frame) :
 	root = None
-	photoImageDictionary = {}
+	# photoImageDictionary = {}
 
 	def __init__(self, root) :
 		super().__init__()
@@ -287,9 +308,9 @@ class BalanceBoardDisplay(Frame) :
 		frameSeparatorFont = font.Font(size=2)
 		self.frameSeparator = Label(self.mainFrame, font=frameSeparatorFont)
 		self.frameSeparator.configure(background='#000000')
-		helpTextLabelFont = font.Font(size=100)
-		self.helpTextLabel = Label(self.mainFrame, text="", font=helpTextLabelFont)
-		self.helpTextLabel.configure(background='white')
+		# helpTextLabelFont = font.Font(size=100)
+		# self.helpTextLabel = Label(self.mainFrame, text="", font=helpTextLabelFont)
+		# self.helpTextLabel.configure(background='white')
 
 		# setup canvas
 		self.canvas = Canvas(self.mainFrame)
@@ -306,14 +327,17 @@ class BalanceBoardDisplay(Frame) :
 		self.motionLabel.pack(side=LEFT, padx=20)
 
 		# setup main widget layout
-		self.isCanvasShowing = True
+		# self.isCanvasShowing = True
 		self.frameSeparator.pack(side=TOP, fill=X)
 		# self.helpTextLabel.pack(side=TOP, expand=True, fill=BOTH)
 		self.canvas.pack(side=TOP, expand=True, fill=BOTH)
 
-		self.photoImageDictionary[PHOTO_IMAGE_TYPE_PERFECT] = PhotoImage(file="Resources/perfect.png")
-		self.photoImageDictionary[PHOTO_IMAGE_TYPE_FAST   ] = PhotoImage(file="Resources/fast.png")
-		self.photoImageDictionary[PHOTO_IMAGE_TYPE_LATE   ] = PhotoImage(file="Resources/late.png")
+		# self.photoImageDictionary[PHOTO_IMAGE_TYPE_PERFECT] = PhotoImage(file="Resources/perfect.png")
+		# self.photoImageDictionary[PHOTO_IMAGE_TYPE_FAST   ] = PhotoImage(file="Resources/fast.png")
+		# self.photoImageDictionary[PHOTO_IMAGE_TYPE_LATE   ] = PhotoImage(file="Resources/late.png")
+
+		self.canvas.create_text(0, 0, fill="#DDDDDD", font=font.Font(size=100),
+								text="한글", anchor=NW)
 
 	def bindEvent(self) :
 		self.root.bind("<Escape>", self.onEscape)
@@ -342,42 +366,78 @@ class BalanceBoardDisplay(Frame) :
 		self.motionLabel.delete(0, END)
 		self.motionLabel.insert(0, text)
 
-	def setHelpText(self, text) :
-		self.helpTextLabel["text"] = text
+	################################################################################
+	#                            canvas control methods                            #
+	################################################################################
+	def getCanvasSize(self) :
+		return (self.canvas.winfo_width(), self.canvas.winfo_height())
 
-	def showCanvasOrHelpText(self, isCanvas) :
-		if isCanvas and not self.isCanvasShowing :
-			self.helpTextLabel.pack_forget()
-			self.canvas.pack(side=TOP, expand=True, fill=BOTH)
-			self.isCanvasShowing = True
+	def deleteObject(self, obj) :
+		self.canvas.delete(obj)
 
-		elif not isCanvas and self.isCanvasShowing :
-			self.canvas.pack_forget()
-			self.helpTextLabel.pack(side=TOP, expand=True, fill=BOTH)
-			self.isCanvasShowing = False
+	def clearCanvas(self) :
+		self.canvas.delete("all")
+
+	def drawText(self, text, x, y, color, fontSize, anchor) :
+		return self.canvas.create_text(
+			x, y,
+			fill=color,
+			font=font.Font(size=fontSize),
+			text=text,
+			anchor=anchor)
+
+	def drawCircle(self, x1, y1, x2, y2, color) :
+		return self.canvas.create_oval(
+			x1, y1,
+			x2, y2,
+			fill=color,
+			outline="#FFFFFF")
+
+	def drawCirclePosition(self, x, y, color, size) :
+		return self.canvas.create_oval(
+			x - size / 2, # x1
+			y - size / 2, # y1
+			x + size / 2, # x2
+			y + size / 2, # y2
+			fill=color,
+			outline="#FFFFFF")
 
 	def drawCircleCenter(self, color, size) :
 		canvasWidth = self.canvas.winfo_width()
 		canvasHeight = self.canvas.winfo_height()
 
-		self.canvas.create_oval((canvasWidth  - size) / 2, # x1
-								(canvasHeight - size) / 2, # y1
-								(canvasWidth  + size) / 2, # x2
-								(canvasHeight + size) / 2, # y2
-								fill=color,
-								outline="#FFFFFF")
+		return self.canvas.create_oval(
+			(canvasWidth  - size) / 2, # x1
+			(canvasHeight - size) / 2, # y1
+			(canvasWidth  + size) / 2, # x2
+			(canvasHeight + size) / 2, # y2
+			fill=color,
+			outline="#FFFFFF")
 
-	def showPhotoImage(self, photoImage) :
-		canvasWidth = self.canvas.winfo_width()
-		canvasHeight = self.canvas.winfo_height()
+	def setHelpText(self, text) :
+		pass
+		# self.helpTextLabel["text"] = text
 
-		self.canvas.create_image(
-			canvasWidth * 0.75, canvasHeight / 2,
-			anchor=CENTER,
-			image=self.photoImageDictionary[photoImage])
+	def showCanvasOrHelpText(self, isCanvas) :
+		pass
+		# if isCanvas and not self.isCanvasShowing :
+		# 	self.helpTextLabel.pack_forget()
+		# 	self.canvas.pack(side=TOP, expand=True, fill=BOTH)
+		# 	self.isCanvasShowing = True
 
-	def clearCanvas(self) :
-		self.canvas.delete("all")
+		# elif not isCanvas and self.isCanvasShowing :
+		# 	self.canvas.pack_forget()
+		# 	self.helpTextLabel.pack(side=TOP, expand=True, fill=BOTH)
+		# 	self.isCanvasShowing = False
+
+	# def showPhotoImage(self, photoImage) :
+	# 	canvasWidth = self.canvas.winfo_width()
+	# 	canvasHeight = self.canvas.winfo_height()
+
+	# 	self.canvas.create_image(
+	# 		canvasWidth * 0.75, canvasHeight / 2,
+	# 		anchor=CENTER,
+	# 		image=self.photoImageDictionary[photoImage])
 
 if __name__ == '__main__' :
 	root = Tk()

@@ -3,9 +3,11 @@ import json
 
 from BalanceModules.BalanceInputs import *
 
-PHOTO_IMAGE_TYPE_PERFECT = "perfect"
-PHOTO_IMAGE_TYPE_FAST    = "fast"
-PHOTO_IMAGE_TYPE_LATE    = "late"
+import pygame
+
+RESULT_TYPE_PERFECT = 0
+RESULT_TYPE_FAST    = 1
+RESULT_TYPE_LATE    = 2
 
 class ExerciseBI() :
 	# constants
@@ -59,6 +61,9 @@ class ExerciseBI() :
 	# motion setting
 	motionSetting = None
 
+	# UI
+	currentStimulation = None
+
 	# instructions
 	exerciseStartInstructionSequence = [
 		"BI 운동을 시작합니다.",
@@ -105,6 +110,10 @@ class ExerciseBI() :
 		self.outfit = outfit
 		self.balanceUI = balanceUI
 
+		pygame.mixer.init()
+		self.effect_left = pygame.mixer.Sound("test/audio_test/effect_left.wav")
+		self.effect_right = pygame.mixer.Sound("test/audio_test/effect_right.wav")
+
 		file = open("Resources/exercise_bi_setting.json", "r")
 		self.motionSetting = json.loads(file.read())
 		file.close()
@@ -120,7 +129,7 @@ class ExerciseBI() :
 		self.state = self.STATE_INSTRUCTION
 		self.nextStateTime = time.time() + len(self.exerciseStartInstructionSequence) * 5.0
 
-		self.balanceUI.setMessageSequenceWithCanvas(self.exerciseStartInstructionSequence, 5.0)
+		self.balanceUI.setMessageSequence(self.exerciseStartInstructionSequence, 5.0)
 		self.balanceUI.appendUpdateEventListener(self.update)
 
 		print("Exercise BI is started")
@@ -146,15 +155,13 @@ class ExerciseBI() :
 
 		elif self.state == self.STATE_MOTION_INSTRUCTION :
 			if time.time() >= self.nextStateTime :
-				self.balanceUI.setCountdownWithCanvas(self.changeTime)
+				self.balanceUI.setCountdown(self.changeTime)
 
 				self.state = self.STATE_COUNTDOWN
 				self.nextStateTime = self.nextStateTime + self.changeTime
 
 		elif self.state == self.STATE_COUNTDOWN :
 			if time.time() >= self.nextStateTime :
-				self.balanceUI.showCanvasOrHelpText(True)
-
 				# initialize motion variables
 				# timing variables
 				self.signalPeriodSecond = self.signalPeriod / 1000.0
@@ -189,11 +196,11 @@ class ExerciseBI() :
 				if key != -1 :
 					deviation = time.time() - self.signalBaseTime
 					if abs(deviation) < self.perfectDeviationMax :
-						self.balanceUI.showResponseResult(PHOTO_IMAGE_TYPE_PERFECT)
+						self.balanceUI.showResponseResult(RESULT_TYPE_PERFECT)
 					elif deviation < 0 :
-						self.balanceUI.showResponseResult(PHOTO_IMAGE_TYPE_FAST)
+						self.balanceUI.showResponseResult(RESULT_TYPE_FAST)
 					else :
-						self.balanceUI.showResponseResult(PHOTO_IMAGE_TYPE_LATE)
+						self.balanceUI.showResponseResult(RESULT_TYPE_LATE)
 					self.judgmentSet = True
 
 			# state check
@@ -202,6 +209,7 @@ class ExerciseBI() :
 					self.showStimulation(self.motion, self.currentStimulationCount)
 					self.motionState = self.MOTION_STATE_SHOWING
 					self.nextMotionStateTime = self.nextMotionStateTime + self.signalDurationSecond
+					self.effect_left.play()
 
 				elif self.motionState == self.MOTION_STATE_SHOWING :
 					self.hideStumulation()
@@ -234,7 +242,7 @@ class ExerciseBI() :
 							self.state = self.STATE_END
 							self.outfit.status["motion"] = 0
 							self.balanceUI.setMotionText("완료")
-							self.balanceUI.setHelpMessageWithCanvas("모든 동작을 마쳤습니다.")
+							self.balanceUI.setHelpText("모든 동작을 마쳤습니다.")
 							closeKeyboardEvent()
 
 		elif self.state == self.STATE_END :
@@ -242,7 +250,7 @@ class ExerciseBI() :
 
 	def startMotionInstruction(self, motion) :
 		instruction = self.getMotionInstruction(motion)
-		self.balanceUI.setMessageSequenceWithCanvas(instruction, 5.0)
+		self.balanceUI.setMessageSequence(instruction, 5.0)
 
 		self.state = self.STATE_MOTION_INSTRUCTION
 		self.nextStateTime = time.time() + len(instruction) * 5.0
@@ -272,7 +280,9 @@ class ExerciseBI() :
 
 		# TODO check hearing stimulation
 
-		self.balanceUI.showStimulation(self.visionStumulationDictionary[inputType])
+		self.currentStimulation = self.balanceUI.showStimulation(self.visionStumulationDictionary[inputType])
 
 	def hideStumulation(self) :
-		self.balanceUI.showStimulation("white")
+		if self.currentStimulation :
+			self.balanceUI.deleteObject(self.currentStimulation)
+			self.currentStimulation = None
