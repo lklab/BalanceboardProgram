@@ -105,6 +105,12 @@ class ExerciseBI() :
 		INPUT_TYPE_LEFT_FOOT  : "green",
 		INPUT_TYPE_RIGHT_FOOT : "yellow",
 	}
+	hearingStumulationDictionary = {
+		INPUT_TYPE_LEFT_HAND  : None,
+		INPUT_TYPE_RIGHT_HAND : None,
+		INPUT_TYPE_LEFT_FOOT  : None,
+		INPUT_TYPE_RIGHT_FOOT : None,
+	}
 
 	def __init__(self, outfit, balanceUI) :
 		self.outfit = outfit
@@ -113,6 +119,10 @@ class ExerciseBI() :
 		pygame.mixer.init()
 		self.effect_left = pygame.mixer.Sound("test/audio_test/effect_left.wav")
 		self.effect_right = pygame.mixer.Sound("test/audio_test/effect_right.wav")
+		self.hearingStumulationDictionary[self.INPUT_TYPE_LEFT_HAND]  = self.effect_left
+		self.hearingStumulationDictionary[self.INPUT_TYPE_RIGHT_HAND] = self.effect_right
+		self.hearingStumulationDictionary[self.INPUT_TYPE_LEFT_FOOT]  = self.effect_left
+		self.hearingStumulationDictionary[self.INPUT_TYPE_RIGHT_FOOT] = self.effect_right
 
 		file = open("Resources/exercise_bi_setting.json", "r")
 		self.motionSetting = json.loads(file.read())
@@ -209,7 +219,6 @@ class ExerciseBI() :
 					self.showStimulation(self.motion, self.currentStimulationCount)
 					self.motionState = self.MOTION_STATE_SHOWING
 					self.nextMotionStateTime = self.nextMotionStateTime + self.signalDurationSecond
-					self.effect_left.play()
 
 				elif self.motionState == self.MOTION_STATE_SHOWING :
 					self.hideStumulation()
@@ -278,8 +287,7 @@ class ExerciseBI() :
 		inputs = self.motionSetting[str(self.level)]["inputs"][motion-1]
 		inputType = inputs[index % len(inputs)]
 
-		# TODO check hearing stimulation
-
+		self.hearingStumulationDictionary[inputType].play()
 		self.currentStimulation = self.balanceUI.showStimulation(self.visionStumulationDictionary[inputType])
 
 	def hideStumulation(self) :

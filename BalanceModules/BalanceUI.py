@@ -110,6 +110,7 @@ class BalanceUI :
 
 	def clearCanvas(self) :
 		self.app.clearCanvas()
+		self.currentHelpTextObject = None
 
 	def setHelpText(self, text) :
 		self.clearHelpTextCoroutine()
@@ -335,9 +336,6 @@ class BalanceBoardDisplay(Frame) :
 		# self.photoImageDictionary[PHOTO_IMAGE_TYPE_PERFECT] = PhotoImage(file="Resources/perfect.png")
 		# self.photoImageDictionary[PHOTO_IMAGE_TYPE_FAST   ] = PhotoImage(file="Resources/fast.png")
 		# self.photoImageDictionary[PHOTO_IMAGE_TYPE_LATE   ] = PhotoImage(file="Resources/late.png")
-
-		self.canvas.create_text(0, 0, fill="#DDDDDD", font=font.Font(size=100),
-								text="한글", anchor=NW)
 
 	def bindEvent(self) :
 		self.root.bind("<Escape>", self.onEscape)
